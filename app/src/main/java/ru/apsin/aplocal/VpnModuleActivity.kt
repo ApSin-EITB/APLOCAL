@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
-import android.os.Build
 import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
@@ -52,7 +51,6 @@ class VpnModuleActivity : AppCompatActivity() {
         }
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_vpn_module)
@@ -71,20 +69,25 @@ class VpnModuleActivity : AppCompatActivity() {
             stopVpn()
         }
 
+        WgActLogic.setLogger { msg ->
+            runOnUiThread {
+                logView.append(msg + "\n")
+            }
+        }
+
         registerReceiver(wifiReceiver, IntentFilter(WifiManager.NETWORK_STATE_CHANGED_ACTION))
         appendLog("Приёмник изменений Wi-Fi зарегистрирован")
 
         appendLog("UI готов. Ждём событий")
         updateNotification("VPN отключен")
         requestPermissionsIfNeeded()
+
         val vpnIntent = android.net.VpnService.prepare(this)
         if (vpnIntent != null) {
             startActivityForResult(vpnIntent, 100)
         } else {
             onActivityResult(100, RESULT_OK, null)
         }
-
-
     }
 
     private fun getCurrentSsid(): String? {
@@ -93,12 +96,12 @@ class VpnModuleActivity : AppCompatActivity() {
     }
 
     private fun startVpn() {
-        val ok = WgActLogic.startVpnWithConfig(this) { appendLog(it) }
+        val ok = WgActLogic.startVpnWithConfig(this, ::appendLog)
         if (ok) updateNotification("VPN включен") else appendLog("Не удалось включить VPN")
     }
 
     private fun stopVpn() {
-        val ok = WgActLogic.stopVpn { appendLog(it) }
+        val ok = WgActLogic.stopVpn(::appendLog)
         if (ok) updateNotification("VPN отключен") else appendLog("Не удалось отключить VPN")
     }
 

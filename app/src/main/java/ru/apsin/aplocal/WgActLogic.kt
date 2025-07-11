@@ -3,6 +3,9 @@ package ru.apsin.aplocal
 import android.content.Context
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 object WgActLogic {
 
@@ -17,6 +20,13 @@ object WgActLogic {
             null
         }
     }
+    private var logCallback: ((String) -> Unit)? = null
+
+
+    fun log(text: String) {
+        val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+        logCallback?.invoke("[$time] $text")
+    }
 
     fun startVpnWithConfig(context: Context, log: (String) -> Unit): Boolean {
         val config = readConfigFromAssets(context)
@@ -28,13 +38,18 @@ object WgActLogic {
         log("Конфигурация загружена. Запуск туннеля...")
         val result = WireGuardBackend.startTunnel(config)
         log("WireGuardBackend.startTunnel() вернул: $result")
-        return result == 0
+        return result
     }
 
     fun stopVpn(log: (String) -> Unit): Boolean {
         log("Остановка туннеля WireGuard...")
         val result = WireGuardBackend.stopTunnel()
         log("WireGuardBackend.stopTunnel() вернул: $result")
-        return result == 0
+        return result
+    }
+
+    // Можно установить логгер глобально, если нужно
+    fun setLogger(log: (String) -> Unit) {
+        // если понадобится централизованный логгер
     }
 }
