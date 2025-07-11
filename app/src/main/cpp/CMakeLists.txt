@@ -1,8 +1,19 @@
-cmake_minimum_required(VERSION 3.10.2)
-project("aplocal")
+cmake_minimum_required(VERSION 3.10)
 
-add_library(wggo SHARED wireguard_backend.cpp)
+project(wireguard_backend)
 
-find_library(log-lib log)
+add_library(
+        wggo
+        SHARED
+        wireguard_backend.cpp
+)
 
-target_link_libraries(wggo ${log-lib})
+find_library(
+        log-lib
+        log
+)
+
+target_link_libraries(
+        wggo
+        ${log-lib}
+)

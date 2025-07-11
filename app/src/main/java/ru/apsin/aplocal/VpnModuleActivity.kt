@@ -1,10 +1,13 @@
 package ru.apsin.aplocal
 
+import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
@@ -35,6 +38,21 @@ class VpnModuleActivity : AppCompatActivity() {
         }
     }
 
+    private fun requestPermissionsIfNeeded() {
+        val permissions = mutableListOf<String>()
+
+        if (checkSelfPermission(Manifest.permission.ACCESS_WIFI_STATE) != PackageManager.PERMISSION_GRANTED)
+            permissions.add(Manifest.permission.ACCESS_WIFI_STATE)
+
+        if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+
+        if (permissions.isNotEmpty()) {
+            requestPermissions(permissions.toTypedArray(), 101)
+        }
+    }
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_vpn_module)
@@ -58,6 +76,15 @@ class VpnModuleActivity : AppCompatActivity() {
 
         appendLog("UI готов. Ждём событий")
         updateNotification("VPN отключен")
+        requestPermissionsIfNeeded()
+        val vpnIntent = android.net.VpnService.prepare(this)
+        if (vpnIntent != null) {
+            startActivityForResult(vpnIntent, 100)
+        } else {
+            onActivityResult(100, RESULT_OK, null)
+        }
+
+
     }
 
     private fun getCurrentSsid(): String? {

@@ -18,12 +18,9 @@ android {
             abiFilters += listOf("arm64-v8a")
         }
 
-        externalNativeBuild {
-            cmake {
-                cppFlags += ""
-            }
-        }
+
     }
+
 
     buildTypes {
         getByName("release") {

@@ -2,9 +2,10 @@ package ru.apsin.aplocal
 
 object WireGuardBackend {
     init {
-        System.loadLibrary("wggo") // wggo → имя .so или .cpp библиотеки
+        System.loadLibrary("wggo")
     }
 
     external fun startTunnel(config: String): Int
     external fun stopTunnel(): Int
 }
+
