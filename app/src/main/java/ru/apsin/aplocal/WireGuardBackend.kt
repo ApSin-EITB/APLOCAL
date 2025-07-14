@@ -2,10 +2,15 @@ package ru.apsin.aplocal
 
 object WireGuardBackend {
     init {
-        System.loadLibrary("wg-go")
         System.loadLibrary("vpnbridge")
     }
 
-    external fun startTunnel(configPath: String, tunFd: Int): Int
+    @JvmStatic
+    external fun startTunnel(config: String): Int
+
+    @JvmStatic
     external fun stopTunnel(): Int
+
+    @JvmStatic
+    external fun startTunnelFromFile(configPath: String, tunFd: Int): Int
 }

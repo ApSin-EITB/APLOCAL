@@ -26,3 +26,11 @@ Java_ru_apsin_aplocal_nativebridge_NativeBridge_stopTunnel(JNIEnv *, jclass) {
     LOGI("Calling stopTunnel");
     return stopTunnel();
 }
+
+extern "C" JNIEXPORT jint JNICALL
+Java_ru_apsin_aplocal_WireGuardBackend_startTunnelFromFile(JNIEnv* env, jclass, jstring configPath, jint tunFd) {
+    const char* path = env->GetStringUTFChars(configPath, nullptr);
+    int result = startTunnel(path, tunFd);  // вызывается Go-реализация
+    env->ReleaseStringUTFChars(configPath, path);
+    return result;
+}

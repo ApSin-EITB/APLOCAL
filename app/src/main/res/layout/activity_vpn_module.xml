@@ -6,6 +6,16 @@
     android:orientation="vertical"
     android:padding="16dp">
 
+    <!-- Текущий статус VPN -->
+    <TextView
+        android:id="@+id/vpnStatusText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Статус: неизвестно"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:paddingBottom="12dp" />
+
     <!-- Кнопка импорта конфигурации -->
     <Button
         android:id="@+id/importConfigButton"
@@ -41,5 +51,5 @@
         android:padding="8dp"
         android:scrollbars="vertical"
         android:textSize="12sp"
-        android:text="Логи будут здесь..." />
+        android:text="Логи..." />
 </LinearLayout>
