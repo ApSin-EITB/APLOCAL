@@ -1,55 +1,23 @@
 package ru.apsin.aplocal
 
 import android.content.Context
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import android.util.Log
+import ru.apsin.aplocal.nativebridge.NativeBridge
 
 object WgActLogic {
+    private const val TAG = "VpnModuleActivity"
 
-    fun readConfigFromAssets(context: Context): String? {
-        return try {
-            val input = context.assets.open("wg0.conf")
-            val reader = BufferedReader(InputStreamReader(input))
-            val result = reader.readText()
-            reader.close()
-            result
-        } catch (e: Exception) {
-            null
-        }
-    }
-    private var logCallback: ((String) -> Unit)? = null
-
-
-    fun log(text: String) {
-        val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-        logCallback?.invoke("[$time] $text")
+    fun startVpnWithConfig(context: Context, configPath: String, tunFd: Int): Boolean {
+        Log.i(TAG, "Запуск WireGuard туннеля с конфигурацией: $configPath и TUN FD: $tunFd")
+        val result = WireGuardBackend.startTunnel(configPath, tunFd)
+        Log.i(TAG, "WireGuardBackend.startTunnel() вернул: $result")
+        return result == 0
     }
 
-    fun startVpnWithConfig(context: Context, log: (String) -> Unit): Boolean {
-        val config = readConfigFromAssets(context)
-        if (config == null) {
-            log("Ошибка чтения конфигурации WireGuard")
-            return false
-        }
-
-        log("Конфигурация загружена. Запуск туннеля...")
-        val result = WireGuardBackend.startTunnel(config)
-        log("WireGuardBackend.startTunnel() вернул: $result")
-        return result
-    }
-
-    fun stopVpn(log: (String) -> Unit): Boolean {
-        log("Остановка туннеля WireGuard...")
+    fun stopVpn(): Boolean {
+        Log.i(TAG, "Остановка WireGuard туннеля")
         val result = WireGuardBackend.stopTunnel()
-        log("WireGuardBackend.stopTunnel() вернул: $result")
-        return result
-    }
-
-    // Можно установить логгер глобально, если нужно
-    fun setLogger(log: (String) -> Unit) {
-        // если понадобится централизованный логгер
+        Log.i(TAG, "WireGuardBackend.stopTunnel() вернул: $result")
+        return result == 0
     }
 }

@@ -7,15 +7,13 @@ add_library(vpnbridge SHARED
         vpnbridge.cpp
 )
 
-# Получаем путь, переданный из Gradle
 add_library(wg-go SHARED IMPORTED)
 
-# 👇 Устанавливаем путь, полученный от Gradle
 set_target_properties(wg-go PROPERTIES
-        IMPORTED_LOCATION "${GO_WG_LIB}"
+        IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/../jniLibs/arm64-v8a/libwg-go.so"
 )
 
 target_link_libraries(vpnbridge
         ${CMAKE_SOURCE_DIR}/../jniLibs/arm64-v8a/libwg-go.so
+        log
 )
-

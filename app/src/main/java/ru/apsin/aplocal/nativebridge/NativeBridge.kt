@@ -1,13 +1,14 @@
 package ru.apsin.aplocal.nativebridge
 
-
 object NativeBridge {
-    init {
-        System.loadLibrary("wg-go")      // <- Сначала Go
-        System.loadLibrary("vpnbridge")  // <- потом твой мост
-    }
+    @JvmStatic
+    external fun startTunnel(configPath: String, tunFd: Int): Int
 
-    external fun startTunnel(configPath: String): Int
+    @JvmStatic
     external fun stopTunnel(): Int
-}
 
+    init {
+        System.loadLibrary("wg-go")
+        System.loadLibrary("vpnbridge")
+    }
+}

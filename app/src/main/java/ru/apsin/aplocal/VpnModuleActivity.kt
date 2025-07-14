@@ -1,124 +1,81 @@
 package ru.apsin.aplocal
 
-import android.Manifest
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.content.pm.PackageManager
-import android.net.wifi.WifiManager
-import android.os.Bundle
-import android.widget.Button
-import android.widget.TextView
+import android.app.Activity
+import android.content.*
+import android.net.VpnService
+import android.os.*
+import android.util.Log
+import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import java.text.SimpleDateFormat
-import java.util.*
+import java.io.*
 
 class VpnModuleActivity : AppCompatActivity() {
 
     private lateinit var logView: TextView
-    private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+    private val TAG = "VpnModuleActivity"
+    private val configFileName = "wg-runtime.conf"
 
-    private lateinit var startButton: Button
-    private lateinit var stopButton: Button
-
-    private val wifiReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val ssid = getCurrentSsid()
-            appendLog("Обнаружено изменение сети. Текущий SSID: $ssid")
-
-            if (ssid == "\"privatka\"") {
-                appendLog("Подключен к доверенной сети — отключаем VPN")
-                stopVpn()
-            } else {
-                appendLog("Неизвестная или отсутствующая Wi-Fi сеть — включаем VPN")
-                startVpn()
+    private val filePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val uri = result.data?.data ?: return@registerForActivityResult
+            contentResolver.openInputStream(uri)?.use { input ->
+                val file = File(filesDir, configFileName)
+                file.outputStream().use { output -> input.copyTo(output) }
+                appendLog("Конфигурация импортирована: ${file.absolutePath}")
             }
         }
     }
 
-    private fun requestPermissionsIfNeeded() {
-        val permissions = mutableListOf<String>()
-
-        if (checkSelfPermission(Manifest.permission.ACCESS_WIFI_STATE) != PackageManager.PERMISSION_GRANTED)
-            permissions.add(Manifest.permission.ACCESS_WIFI_STATE)
-
-        if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
-            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
-
-        if (permissions.isNotEmpty()) {
-            requestPermissions(permissions.toTypedArray(), 101)
-        }
+    private fun appendLog(text: String) {
+        logView.append("[$TAG] $text\n")
+        Log.i(TAG, text)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_vpn_module)
 
-        logView = findViewById(R.id.vpnLogView)
-        startButton = findViewById(R.id.vpnStartButton)
-        stopButton = findViewById(R.id.vpnStopButton)
+        logView = findViewById(R.id.logTextView)
 
-        startButton.setOnClickListener {
-            appendLog("Кнопка запуска VPN нажата")
+        findViewById<Button>(R.id.importConfigButton).setOnClickListener {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "*/*"
+            }
+            filePickerLauncher.launch(intent)
+        }
+
+        findViewById<Button>(R.id.startVpnButton).setOnClickListener {
             startVpn()
         }
 
-        stopButton.setOnClickListener {
-            appendLog("Кнопка остановки VPN нажата")
+        findViewById<Button>(R.id.stopVpnButton).setOnClickListener {
             stopVpn()
         }
-
-        WgActLogic.setLogger { msg ->
-            runOnUiThread {
-                logView.append(msg + "\n")
-            }
-        }
-
-        registerReceiver(wifiReceiver, IntentFilter(WifiManager.NETWORK_STATE_CHANGED_ACTION))
-        appendLog("Приёмник изменений Wi-Fi зарегистрирован")
-
-        appendLog("UI готов. Ждём событий")
-        updateNotification("VPN отключен")
-        requestPermissionsIfNeeded()
-
-        val vpnIntent = android.net.VpnService.prepare(this)
-        if (vpnIntent != null) {
-            startActivityForResult(vpnIntent, 100)
-        } else {
-            onActivityResult(100, RESULT_OK, null)
-        }
-    }
-
-    private fun getCurrentSsid(): String? {
-        val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        return wifiManager.connectionInfo?.ssid
     }
 
     private fun startVpn() {
-        val ok = WgActLogic.startVpnWithConfig(this, ::appendLog)
-        if (ok) updateNotification("VPN включен") else appendLog("Не удалось включить VPN")
+        val intent = VpnService.prepare(this)
+        if (intent != null) {
+            startActivityForResult(intent, 1)
+        } else {
+            onActivityResult(1, Activity.RESULT_OK, null)
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == 1 && resultCode == RESULT_OK) {
+            val vpnIntent = Intent(this, MyVpnService::class.java)
+            startService(vpnIntent)
+        }
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     private fun stopVpn() {
-        val ok = WgActLogic.stopVpn(::appendLog)
-        if (ok) updateNotification("VPN отключен") else appendLog("Не удалось отключить VPN")
-    }
-
-    private fun appendLog(text: String) {
-        val now = timeFormat.format(Date())
-        logView.append("[$now] $text\n")
-    }
-
-    private fun updateNotification(status: String) {
-        appendLog("Обновление уведомления: $status")
-        NotificationHelper.show(this, 101, NotificationHelper.createStatusNotification(this, status))
-        findViewById<TextView>(R.id.vpnStatusText)?.text = "Статус: $status"
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        unregisterReceiver(wifiReceiver)
-        appendLog("Приёмник Wi-Fi удалён")
+        stopService(Intent(this, MyVpnService::class.java))
+        WgActLogic.stopVpn()
     }
 }

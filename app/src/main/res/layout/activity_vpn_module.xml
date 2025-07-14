@@ -1,43 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/vpn_module_container"
+    android:id="@+id/vpnModuleLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp">
 
-    <TextView
-        android:id="@+id/vpnStatusText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Статус: неизвестно"
-        android:textStyle="bold"
-        android:textSize="16sp"
-        android:paddingBottom="12dp"/>
-
+    <!-- Кнопка импорта конфигурации -->
     <Button
-        android:id="@+id/vpnStartButton"
+        android:id="@+id/importConfigButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Включить VPN" />
+        android:text="Импортировать конфиг" />
 
+    <!-- Кнопка запуска VPN -->
     <Button
-        android:id="@+id/vpnStopButton"
+        android:id="@+id/startVpnButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Выключить VPN"
+        android:text="Запустить VPN"
         android:layout_marginTop="8dp" />
 
+    <!-- Кнопка остановки VPN -->
+    <Button
+        android:id="@+id/stopVpnButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Остановить VPN"
+        android:layout_marginTop="8dp" />
+
+    <!-- Область для логов -->
     <TextView
-        android:id="@+id/vpnLogView"
+        android:id="@+id/logTextView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="12dp"
         android:layout_weight="1"
         android:background="#111111"
         android:textColor="#00FF00"
-        android:textSize="12sp"
         android:textIsSelectable="true"
+        android:padding="8dp"
         android:scrollbars="vertical"
-        android:text="=== Логи VPN ===\n" />
+        android:textSize="12sp"
+        android:text="Логи будут здесь..." />
 </LinearLayout>

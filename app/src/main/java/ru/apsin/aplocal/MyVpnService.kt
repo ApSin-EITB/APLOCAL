@@ -5,40 +5,50 @@ import android.content.Intent
 import android.net.VpnService
 import android.os.ParcelFileDescriptor
 import android.util.Log
-import java.io.IOException
+import ru.apsin.aplocal.nativebridge.NativeBridge
+import java.io.File
+import java.io.FileOutputStream
 
 class MyVpnService : VpnService() {
+
     private var vpnInterface: ParcelFileDescriptor? = null
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Thread {
-            startVpn()
-        }.start()
-        return Service.START_STICKY
-    }
-
-    private fun startVpn() {
-        val builder = Builder()
-        builder.setSession("WireGuardClient")
-        builder.addAddress("10.3.2.50", 32)
-        builder.addRoute("0.0.0.0", 0)
-        builder.addDnsServer("1.1.1.1")
+    fun start(config: String): Boolean {
         try {
+            val builder = Builder()
+            builder.setSession("APLocal")
+                .addAddress("10.3.2.50", 32)
+                .addDnsServer("10.0.0.200")
+                .addRoute("0.0.0.0", 0)
+                .setMtu(1280)
+
             vpnInterface = builder.establish()
-            Log.i("MyVpnService", "VPN туннель поднят")
+            if (vpnInterface == null) {
+                Log.e("VpnModuleActivity", "Не удалось создать VPN-интерфейс")
+                return false
+            }
+
+            val configFile = File(filesDir, "wg-runtime.conf")
+            FileOutputStream(configFile).use { it.write(config.toByteArray()) }
+
+            val fd = vpnInterface!!.fd
+            Log.i("VpnModuleActivity", "Вызов NativeBridge.startTunnel($fd)")
+            val result = NativeBridge.startTunnel(configFile.absolutePath, fd)
+            Log.i("VpnModuleActivity", "WireGuard старт завершён с кодом: $result")
+            return result == 0
+
         } catch (e: Exception) {
-            Log.e("MyVpnService", "Ошибка запуска VPN", e)
+            Log.e("VpnModuleActivity", "Ошибка запуска VPN: ${e.message}", e)
+            return false
         }
     }
 
     override fun onDestroy() {
-        super.onDestroy()
-        try {
-            vpnInterface?.close()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
+        NativeBridge.stopTunnel()
+        vpnInterface?.close()
         vpnInterface = null
-        Log.i("MyVpnService", "VPN остановлен")
+        super.onDestroy()
     }
+
+    override fun onBind(intent: Intent?) = null
 }
